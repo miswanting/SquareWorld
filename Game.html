@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>Game</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:d%3A%5Conedrive%5Ccode%5Csquareworld%5Cdist%5Cgame.py">d:\onedrive\code\squareworld\dist\game.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:d%3A%5Cusers%5Conedrive%5Ccode%5Csquareworld%5Cdist%5Cgame.py">d:\users\onedrive\code\squareworld\dist\game.py</a></font></td></tr></table>
     <p><tt>#&nbsp;coding=utf8</tt></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -53,13 +53,15 @@
 <td colspan=2><tt>控制摄像机。<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Camera-__init__"><strong>__init__</strong></a>(self, config)</dt></dl>
+<dl><dt><a name="Camera-__init__"><strong>__init__</strong></a>(self, config)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
 
 <dl><dt><a name="Camera-getHWCamera"><strong>getHWCamera</strong></a>(self)</dt></dl>
 
-<dl><dt><a name="Camera-getSWCamera"><strong>getSWCamera</strong></a>(self)</dt></dl>
+<dl><dt><a name="Camera-getSWCamera"><strong>getSWCamera</strong></a>(self)</dt><dd><tt>SWCamera是Camera的实际坐标</tt></dd></dl>
 
-<dl><dt><a name="Camera-setHWCamera"><strong>setHWCamera</strong></a>(self, position)</dt></dl>
+<dl><dt><a name="Camera-setHWCamera"><strong>setHWCamera</strong></a>(self, position)</dt><dd><tt>HWCamera是Camera的Block坐标</tt></dd></dl>
+
+<dl><dt><a name="Camera-setSWCamera"><strong>setSWCamera</strong></a>(self, position)</dt></dl>
 
 <dl><dt><a name="Camera-update"><strong>update</strong></a>(self)</dt></dl>
 
@@ -84,6 +86,8 @@ Data descriptors defined here:<br>
 <dl><dt><a name="Display-__init__"><strong>__init__</strong></a>(self, config)</dt><dd><tt>初始化。</tt></dd></dl>
 
 <dl><dt><a name="Display-createWindow"><strong>createWindow</strong></a>(self)</dt><dd><tt>创建游戏显示主窗口。</tt></dd></dl>
+
+<dl><dt><a name="Display-moveSWMouse"><strong>moveSWMouse</strong></a>(self, pos)</dt></dl>
 
 <dl><dt><a name="Display-startLoop"><strong>startLoop</strong></a>(self)</dt></dl>
 
@@ -133,7 +137,7 @@ Data descriptors defined here:<br>
 <td colspan=2><tt>地图管理类。注重数据储存与管理。<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="Map-__init__"><strong>__init__</strong></a>(self, config)</dt></dl>
+<dl><dt><a name="Map-__init__"><strong>__init__</strong></a>(self, config)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
 
 <dl><dt><a name="Map-getMapBlock"><strong>getMapBlock</strong></a>(self, position)</dt></dl>
 
@@ -143,7 +147,7 @@ Data descriptors defined here:<br>
 
 <dl><dt><a name="Map-mapGenerate"><strong>mapGenerate</strong></a>(self, size)</dt></dl>
 
-<dl><dt><a name="Map-renderMap"><strong>renderMap</strong></a>(self, camera)</dt></dl>
+<dl><dt><a name="Map-renderMap"><strong>renderMap</strong></a>(self, camera)</dt><dd><tt>返回一个已渲染的地图Surface</tt></dd></dl>
 
 <dl><dt><a name="Map-setMapBlock"><strong>setMapBlock</strong></a>(self, position, data)</dt></dl>
 

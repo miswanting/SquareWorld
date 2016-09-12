@@ -1,12 +1,14 @@
 # coding=utf8
-import threading
-import pygame
-import time
-import ctypes
 import logging
-import configparser
 import math
+import threading
+import time
+
+import pygame
 from pygame.locals import *
+
+import configparser
+import ctypes
 
 
 class Game():
@@ -42,6 +44,7 @@ class Game():
                 print(cmd)
                 if cmd == 'exit':
                     self.isRunning = False
+                    self.display.isRunning = False
         star = threading.Thread(name='inputStar', target=inputStar)
         star.start()
 
@@ -80,6 +83,7 @@ class Display():
         self.config['windowHeight'] = int(config['windowHeight'])
         self.config['windowMode'] = config['windowMode']
         self.config['windowTitle'] = config['windowTitle']
+        self.SWMouse = (0, 0)
         self.map = Map(self.config)
         self.camera = Camera(self.config)
         # self.screen = pygame.display.set_mode((150, 50))
@@ -127,6 +131,26 @@ class Display():
         self.camera.setHWCamera((0, 0))
         pygame.display.flip()
 
+    def moveSWMouse(self, pos):
+        self.SWMouse = (
+            int(self.SWMouse[0] + pos[0]), int(self.SWMouse[1] + pos[1]))
+        if self.SWMouse[0] > self.config['windowWidth']:
+            self.camera.setSWCamera((self.camera.getSWCamera()[
+                                    0] + self.SWMouse[0] - self.config['windowWidth'], self.camera.getSWCamera()[1]))
+            self.SWMouse = (self.config['windowWidth'], self.SWMouse[1])
+        if self.SWMouse[0] < 0:
+            self.camera.setSWCamera(
+                (self.camera.getSWCamera()[0] + self.SWMouse[0], self.camera.getSWCamera()[1]))
+            self.SWMouse = (0, self.SWMouse[1])
+        if self.SWMouse[1] > self.config['windowHeight']:
+            self.camera.setSWCamera((self.camera.getSWCamera()[0], self.camera.getSWCamera()[
+                                    1] + self.SWMouse[1] - self.config['windowHeight']))
+            self.SWMouse = (self.SWMouse[0], self.config['windowHeight'])
+        if self.SWMouse[1] < 0:
+            self.camera.setSWCamera(
+                (self.camera.getSWCamera()[0], self.camera.getSWCamera()[1] + self.SWMouse[1]))
+            self.SWMouse = (self.SWMouse[0], 0)
+
     def startLoop(self):
         while self.isRunning:
             for event in pygame.event.get():
@@ -147,21 +171,38 @@ class Display():
                     elif event.key == 100:  # d
                         pos = self.camera.getHWCamera()
                         self.camera.setHWCamera((pos[0] + 1, pos[1]))
+                    elif event.key == 27:  # Esc
+                        print('QUIT')
+                        self.isRunning = False
+                        print(threading.active_count())
+                        print(threading.enumerate())
                 elif event.type == KEYUP:
                     print('KEYUP', event.key)
                 elif event.type == MOUSEMOTION:
                     print('MOUSEMOTION', event.pos)
+                    self.moveSWMouse(
+                        (event.pos[0] - self.config['windowWidth'] / 2, event.pos[1] - self.config['windowHeight'] / 2))
+                    pygame.mouse.set_pos(
+                        (self.config['windowWidth'] / 2, self.config['windowHeight'] / 2))
+                    print('SWMOUSEMOTION', self.SWMouse)
                 elif event.type == MOUSEBUTTONDOWN:
                     print('MOUSEBUTTONDOWN', event.button)
                 elif event.type == MOUSEBUTTONUP:
                     print('MOUSEBUTTONUP', event.button)
                 elif event.type == ACTIVEEVENT:
                     print('ACTIVEEVENT', event.gain)
+                    if event.gain == 1:
+                        pygame.mouse.set_visible(False)
+                    elif event.gain == 0:
+                        pygame.mouse.set_visible(True)
+                    else:
+                        pass
             #
             pygame.Surface.blit(
                 self.screen, self.map.renderMap(self.camera), (0, 0))
             self.camera.update()
             #
+            pygame.draw.circle(self.screen, (0, 0, 255), self.SWMouse, 10, 0)
             pygame.display.flip()
             # pygame.time.wait(20)
             time.sleep(0.02)
@@ -307,24 +348,34 @@ class Camera():
         self.SWCamera['TPosition'] = (0, 0)
 
     def setHWCamera(self, position):
+        """
+        HWCamera是Camera的Block坐标
+        """
         self.HWCamera['position'] = position
 
     def getHWCamera(self):
         return self.HWCamera['position']
 
+    def setSWCamera(self, position):
+        self.SWCamera['TPosition'] = position
+
     def getSWCamera(self):
+        """
+        SWCamera是Camera的实际坐标
+        """
         return self.SWCamera['TPosition']
 
     def update(self):
-        x = self.HWCamera['position'][0] * self.config['squareSize']
-        y = self.HWCamera['position'][1] * self.config['squareSize']
-        dx = x - self.SWCamera['TPosition'][0]
-        dy = y - self.SWCamera['TPosition'][1]
-        ndx = dx * 0.8
-        ndy = dy * 0.8
-        nx = x - ndx
-        ny = y - ndy
-        self.SWCamera['TPosition'] = (nx, ny)
+        # x = self.HWCamera['position'][0] * self.config['squareSize']
+        # y = self.HWCamera['position'][1] * self.config['squareSize']
+        # dx = x - self.SWCamera['TPosition'][0]
+        # dy = y - self.SWCamera['TPosition'][1]
+        # ndx = dx * 0.8
+        # ndy = dy * 0.8
+        # nx = x - ndx
+        # ny = y - ndy
+        # self.SWCamera['TPosition'] = (nx, ny)
+        pass
 
 if __name__ == '__main__':
     game = Game()
