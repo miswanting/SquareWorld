@@ -46,7 +46,7 @@ class Game():
                     self.isRunning = False
                     self.display.isRunning = False
         star = threading.Thread(name='inputStar', target=inputStar)
-        star.start()
+        # star.start()
 
     def hideCmdWindow(self):
         """
@@ -81,10 +81,14 @@ class Display():
         self.config['squareSize'] = int(config['squareSize'])
         self.config['windowWidth'] = int(config['windowWidth'])
         self.config['windowHeight'] = int(config['windowHeight'])
+        self.config['windowHeight'] = int(config['windowHeight'])
+        self.config['screenMoveSpeed'] = int(config['screenMoveSpeed'])
+        self.config['screenMoveArea'] = int(config['screenMoveArea'])
         self.config['windowMode'] = config['windowMode']
         self.config['windowTitle'] = config['windowTitle']
         self.SWMouse = (0, 0)
         self.map = Map(self.config)
+        self.ui = UI(self.config)
         self.camera = Camera(self.config)
         # self.screen = pygame.display.set_mode((150, 50))
         # pygame.display.set_caption('Basic Pygame program')
@@ -120,6 +124,10 @@ class Display():
         """
         self.screen = pygame.display.set_mode(
             (int(self.config['windowWidth']), int(self.config['windowHeight'])))
+        # self.screen = pygame.display.set_mode(
+        #     (int(self.config['windowWidth']), int(self.config['windowHeight'])), FULLSCREEN | DOUBLEBUF | HWSURFACE)
+        # self.screen = pygame.display.set_mode(
+        #     (int(self.config['windowWidth']), int(self.config['windowHeight'])), OPENGL)
         pygame.display.set_caption(self.config['windowTitle'])
         self.screen.fill((255, 255, 255))
         newSurface = pygame.Surface((50, 50))
@@ -134,22 +142,32 @@ class Display():
     def moveSWMouse(self, pos):
         self.SWMouse = (
             int(self.SWMouse[0] + pos[0]), int(self.SWMouse[1] + pos[1]))
+        # 控制不出界
         if self.SWMouse[0] > self.config['windowWidth']:
-            self.camera.setSWCamera((self.camera.getSWCamera()[
-                                    0] + self.SWMouse[0] - self.config['windowWidth'], self.camera.getSWCamera()[1]))
-            self.SWMouse = (self.config['windowWidth'], self.SWMouse[1])
+            self.SWMouse = (self.config['windowWidth'],
+                            self.SWMouse[1])
         if self.SWMouse[0] < 0:
-            self.camera.setSWCamera(
-                (self.camera.getSWCamera()[0] + self.SWMouse[0], self.camera.getSWCamera()[1]))
             self.SWMouse = (0, self.SWMouse[1])
         if self.SWMouse[1] > self.config['windowHeight']:
-            self.camera.setSWCamera((self.camera.getSWCamera()[0], self.camera.getSWCamera()[
-                                    1] + self.SWMouse[1] - self.config['windowHeight']))
             self.SWMouse = (self.SWMouse[0], self.config['windowHeight'])
         if self.SWMouse[1] < 0:
-            self.camera.setSWCamera(
-                (self.camera.getSWCamera()[0], self.camera.getSWCamera()[1] + self.SWMouse[1]))
             self.SWMouse = (self.SWMouse[0], 0)
+        # if self.SWMouse[0] > self.config['windowWidth']:
+        #     self.camera.setSWCamera((self.camera.getSWCamera()[
+        #                             0] + self.SWMouse[0] - self.config['windowWidth'], self.camera.getSWCamera()[1]))
+        #     self.SWMouse = (self.config['windowWidth'], self.SWMouse[1])
+        # if self.SWMouse[0] < 0:
+        #     self.camera.setSWCamera(
+        #         (self.camera.getSWCamera()[0] + self.SWMouse[0], self.camera.getSWCamera()[1]))
+        #     self.SWMouse = (0, self.SWMouse[1])
+        # if self.SWMouse[1] > self.config['windowHeight']:
+        #     self.camera.setSWCamera((self.camera.getSWCamera()[0], self.camera.getSWCamera()[
+        #                             1] + self.SWMouse[1] - self.config['windowHeight']))
+        #     self.SWMouse = (self.SWMouse[0], self.config['windowHeight'])
+        # if self.SWMouse[1] < 0:
+        #     self.camera.setSWCamera(
+        #         (self.camera.getSWCamera()[0], self.camera.getSWCamera()[1] + self.SWMouse[1]))
+        #     self.SWMouse = (self.SWMouse[0], 0)
 
     def startLoop(self):
         while self.isRunning:
@@ -187,6 +205,23 @@ class Display():
                     print('SWMOUSEMOTION', self.SWMouse)
                 elif event.type == MOUSEBUTTONDOWN:
                     print('MOUSEBUTTONDOWN', event.button)
+                    # TODO(miswanting):Use subsurface
+                    if self.ui.upPanel.get_rect().collidepoint(self.SWMouse):
+                        pass
+                    else:
+                        x = self.camera.getSWCamera(
+                        )[0] - self.config['windowWidth'] / 2 + self.SWMouse[0]
+                        y = self.camera.getSWCamera(
+                        )[1] - self.config['windowHeight'] / 2 + self.SWMouse[1]
+                        x = math.floor(
+                            (x + self.config['squareSize'] / 2) / self.config['squareSize'])
+                        y = math.floor(
+                            (y + self.config['squareSize'] / 2) / self.config['squareSize'])
+                        newSurface = pygame.Surface(
+                            (self.config['squareSize'], self.config['squareSize']))
+                        newSurface.fill((0, 255, 0))
+                        self.map.setMapBlock((x, y), newSurface)
+                        print((x, y))
                 elif event.type == MOUSEBUTTONUP:
                     print('MOUSEBUTTONUP', event.button)
                 elif event.type == ACTIVEEVENT:
@@ -197,10 +232,25 @@ class Display():
                         pygame.mouse.set_visible(True)
                     else:
                         pass
+            # 屏幕滚动
+            if self.SWMouse[0] > self.config['windowWidth'] - self.config['screenMoveArea']:
+                self.camera.setSWCamera((self.camera.getSWCamera()[
+                                        0] + self.config['screenMoveSpeed'], self.camera.getSWCamera()[1]))
+            if self.SWMouse[0] < self.config['screenMoveArea']:
+                self.camera.setSWCamera((self.camera.getSWCamera()[
+                                        0] - self.config['screenMoveSpeed'], self.camera.getSWCamera()[1]))
+            if self.SWMouse[1] > self.config['windowHeight'] - self.config['screenMoveArea']:
+                self.camera.setSWCamera((self.camera.getSWCamera()[0], self.camera.getSWCamera()[
+                                        1] + self.config['screenMoveSpeed']))
+            if self.SWMouse[1] < self.config['screenMoveArea']:
+                self.camera.setSWCamera((self.camera.getSWCamera()[0], self.camera.getSWCamera()[
+                                        1] - self.config['screenMoveSpeed']))
             #
             pygame.Surface.blit(
                 self.screen, self.map.renderMap(self.camera), (0, 0))
             self.camera.update()
+            self.ui.update()
+            pygame.Surface.blit(self.screen, self.ui.surface, (0, 0))
             #
             pygame.draw.circle(self.screen, (0, 0, 255), self.SWMouse, 10, 0)
             pygame.display.flip()
@@ -230,7 +280,8 @@ class Map():
         if positionStr in self.map.keys():
             return self.map[positionStr]
         else:
-            newSurface = pygame.Surface((50, 50))
+            newSurface = pygame.Surface(
+                (self.config['squareSize'], self.config['squareSize']))
             if position[0] == 0 or position[1] == 0:
                 newSurface.fill((255, 0, 0))
             else:
@@ -244,6 +295,7 @@ class Map():
             return self.map[positionStr]
 
     def renderMap(self, camera):
+        # TODO(miswanting):Use subsurface
         """
         返回一个已渲染的地图Surface
         """
@@ -377,5 +429,50 @@ class Camera():
         # self.SWCamera['TPosition'] = (nx, ny)
         pass
 
+
+class UI(object):
+
+    def __init__(self, config):
+        pygame.init()
+        self.config = config
+        self.surface = pygame.Surface(
+            (self.config['windowWidth'], self.config['windowHeight']), SRCALPHA)
+        self.surface.fill((0, 0, 0, 0))
+        self.upPanel = pygame.Surface(
+            (self.config['windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize']))
+        # self.buildPanelRect =
+
+    def update(self):
+        self.upPanel.fill((255, 255, 255))
+        pygame.draw.rect(self.upPanel, (0, 0, 0), (0, 0, self.config[
+                         'windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize']), 1)
+        font = pygame.font.Font('msyh.ttc', 20)
+        text = font.render('金币：%s' %
+                           100, 1, (0, 0, 0))
+        pygame.Surface.blit(self.upPanel, text, (self.config[
+                            'squareSize'] / 2 - text.get_height() / 2, self.config['squareSize'] / 2 - text.get_height() / 2))
+        pygame.Surface.blit(self.surface, self.upPanel,
+                            (self.config['squareSize'], 0))
+
+
+class Building(object):
+
+    def __init__(self, config):
+        pygame.init()
+        self.config = config
+
+    def getNewBuilding(self, name):
+        newBuilding = {}
+        newBuilding['name'] = name
+        newBuilding['surface'] = pygame.Surface(
+            (self.config['squareSize'], self.config['squareSize']))
+        newBuilding['surface'].fill((255, 255, 255))
+        pygame.draw.rect(newBuilding['surface'], (0, 0, 0), (0, 0, self.config[
+                         'squareSize'], self.config['squareSize'], 1))
+        font = pygame.font.Font('msyh.ttc', 20)
+        text = font.render('%s' % name, 1, (0, 0, 0))
+        pygame.Surface.blit(newBuilding['surface'], text, (self.config[
+                            'squareSize'] / 2 - text.get_width() / 2, self.config['squareSize'] / 2 - text.get_height() / 2))
+        return newBuilding
 if __name__ == '__main__':
     game = Game()
