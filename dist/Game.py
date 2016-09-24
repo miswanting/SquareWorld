@@ -1,6 +1,8 @@
 # coding=utf8
 import logging
 import math
+import os
+import sys
 import threading
 import time
 
@@ -9,6 +11,19 @@ from pygame.locals import *
 
 import configparser
 import ctypes
+
+
+def getResource(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        print('_MEIPASS', sys._MEIPASS, relative_path)
+        base_path = sys._MEIPASS
+    elif hasattr(sys, '_MEIPASS2'):
+        print('_MEIPASS2', sys._MEIPASS, relative_path)
+        base_path = sys._MEIPASS2
+    else:
+        print('.', os.path.abspath("."), relative_path)
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 class Game():
@@ -23,6 +38,9 @@ class Game():
         # self.hideCmdWindow()
         # self.showCmdWindow()
         self.isRunning = True
+        fmt = '{0:^8}'
+        logging.basicConfig(filename='Game.log', level=logging.DEBUG, filemode='w',
+                            format='%(relativeCreated)6d[%(levelname).4s][%(threadName)-.10s]%(message)s', datefmt='%I:%M:%S')
         self.init()
         pass
 
@@ -32,7 +50,7 @@ class Game():
         """
         self.startInputStar()
         config = configparser.ConfigParser()
-        config.read('config.conf')
+        config.read(getResource('config.conf'))
         self.display = Display(config['init'])
         self.display.createWindow()
         self.display.startLoop()
@@ -81,7 +99,8 @@ class Display():
         self.config['squareSize'] = int(config['squareSize'])
         self.config['windowWidth'] = int(config['windowWidth'])
         self.config['windowHeight'] = int(config['windowHeight'])
-        self.config['windowHeight'] = int(config['windowHeight'])
+        logging.info('屏幕分辨率：{}x{}'.format(
+            self.config['windowWidth'], self.config['windowHeight']))
         self.config['screenMoveSpeed'] = int(config['screenMoveSpeed'])
         self.config['screenMoveArea'] = int(config['screenMoveArea'])
         self.config['windowMode'] = config['windowMode']
@@ -122,12 +141,13 @@ class Display():
         """
         创建游戏显示主窗口。
         """
-        self.screen = pygame.display.set_mode(
-            (int(self.config['windowWidth']), int(self.config['windowHeight'])))
-        # self.screen = pygame.display.set_mode(
-        #     (int(self.config['windowWidth']), int(self.config['windowHeight'])), FULLSCREEN | DOUBLEBUF | HWSURFACE)
-        # self.screen = pygame.display.set_mode(
-        #     (int(self.config['windowWidth']), int(self.config['windowHeight'])), OPENGL)
+        logging.info('窗口模式：{}'.format(self.config['windowMode']))
+        if self.config['windowMode'] == 'windowed':
+            self.screen = pygame.display.set_mode(
+                (int(self.config['windowWidth']), int(self.config['windowHeight'])))
+        elif self.config['windowMode'] == 'fullscreen':
+            self.screen = pygame.display.set_mode((int(self.config['windowWidth']), int(
+                self.config['windowHeight'])), FULLSCREEN | DOUBLEBUF | HWSURFACE)
         pygame.display.set_caption(self.config['windowTitle'])
         self.screen.fill((255, 255, 255))
         newSurface = pygame.Surface((50, 50))
@@ -169,14 +189,26 @@ class Display():
         #         (self.camera.getSWCamera()[0], self.camera.getSWCamera()[1] + self.SWMouse[1]))
         #     self.SWMouse = (self.SWMouse[0], 0)
 
+    def clickBlock(self, blockPos):
+        logging.debug('clickAt {}'.format(blockPos))
+        self.blockisSelected = True
+        self.selectedBlock = blockPos
+        self.ui.showBuildPanel()
+        # newSurface = pygame.Surface(
+        #     (self.config['squareSize'], self.config['squareSize']))
+        # newSurface.fill((0, 255, 0))
+        # self.map.setMapBlock(blockPos, newSurface)
+
     def startLoop(self):
         while self.isRunning:
             for event in pygame.event.get():
                 if event.type == QUIT:
-                    print('QUIT')
+                    # print('QUIT')
+                    logging.debug('QUIT')
                     self.isRunning = False
                 elif event.type == KEYDOWN:
-                    print('KEYDOWN', event.key)
+                    # print('KEYDOWN', event.key)
+                    logging.debug('KEYDOWN {}'.format(event.key))
                     if event.key == 119:  # w
                         pos = self.camera.getHWCamera()
                         self.camera.setHWCamera((pos[0], pos[1] - 1))
@@ -190,24 +222,36 @@ class Display():
                         pos = self.camera.getHWCamera()
                         self.camera.setHWCamera((pos[0] + 1, pos[1]))
                     elif event.key == 27:  # Esc
-                        print('QUIT')
+                        # print('QUIT')
+                        logging.debug('QUIT')
                         self.isRunning = False
                         print(threading.active_count())
                         print(threading.enumerate())
                 elif event.type == KEYUP:
-                    print('KEYUP', event.key)
+                    # print('KEYUP', event.key)
+                    logging.debug('KEYUP {}'.format(event.key))
                 elif event.type == MOUSEMOTION:
-                    print('MOUSEMOTION', event.pos)
+                    # print('MOUSEMOTION', event.pos)
+                    logging.debug('MOUSEMOTION {}'.format(event.pos))
                     self.moveSWMouse(
                         (event.pos[0] - self.config['windowWidth'] / 2, event.pos[1] - self.config['windowHeight'] / 2))
                     pygame.mouse.set_pos(
                         (self.config['windowWidth'] / 2, self.config['windowHeight'] / 2))
-                    print('SWMOUSEMOTION', self.SWMouse)
+                    # print('SWMOUSEMOTION', self.SWMouse)
+                    logging.debug('SWMOUSEMOTION {}'.format(self.SWMouse))
                 elif event.type == MOUSEBUTTONDOWN:
-                    print('MOUSEBUTTONDOWN', event.button)
+                    # print('MOUSEBUTTONDOWN', event.button)
+                    logging.debug('MOUSEBUTTONDOWN {}'.format(event.button))
                     # TODO(miswanting):Use subsurface
-                    if self.ui.upPanel.get_rect().collidepoint(self.SWMouse):
+                    if pygame.Rect(self.ui.upPanel.get_abs_offset(), (self.ui.upPanel.get_rect()[2], self.ui.upPanel.get_rect()[3])).collidepoint(self.SWMouse):
                         pass
+                    elif self.ui.isBuildPanelVisible:
+                        if pygame.Rect(self.ui.buildPanel.get_abs_offset(), (self.ui.buildPanel.get_rect()[2], self.ui.buildPanel.get_rect()[3])).collidepoint(self.SWMouse):
+                            pass
+                        if pygame.Rect(self.ui.buildPanel.get_abs_offset(), (self.ui.buildPanel.get_rect()[2], self.ui.buildPanel.get_rect()[3])).collidepoint(self.SWMouse):
+                            pass
+                        else:
+                            self.ui.isBuildPanelVisible = not self.ui.isBuildPanelVisible
                     else:
                         x = self.camera.getSWCamera(
                         )[0] - self.config['windowWidth'] / 2 + self.SWMouse[0]
@@ -217,15 +261,13 @@ class Display():
                             (x + self.config['squareSize'] / 2) / self.config['squareSize'])
                         y = math.floor(
                             (y + self.config['squareSize'] / 2) / self.config['squareSize'])
-                        newSurface = pygame.Surface(
-                            (self.config['squareSize'], self.config['squareSize']))
-                        newSurface.fill((0, 255, 0))
-                        self.map.setMapBlock((x, y), newSurface)
-                        print((x, y))
+                        self.clickBlock((x, y))
                 elif event.type == MOUSEBUTTONUP:
-                    print('MOUSEBUTTONUP', event.button)
+                    # print('MOUSEBUTTONUP', event.button)
+                    logging.debug('MOUSEBUTTONUP {}'.format(event.button))
                 elif event.type == ACTIVEEVENT:
-                    print('ACTIVEEVENT', event.gain)
+                    # print('ACTIVEEVENT', event.gain)
+                    logging.debug('ACTIVEEVENT {}'.format(event.gain))
                     if event.gain == 1:
                         pygame.mouse.set_visible(False)
                     elif event.gain == 0:
@@ -267,15 +309,14 @@ class Map():
         pygame.init()
         self.config = config
         self.map = {}
+        self.defaultFont = pygame.font.Font(getResource('msyh.ttc'), 12)
 
     def setMapBlock(self, position, data):
-        positionStr = '%s|%s' % (position[0], position[1]
-                                 )
+        positionStr = '%s|%s' % (position[0], position[1])
         self.map[positionStr] = data
 
     def getMapBlock(self, position):
-        positionStr = '%s|%s' % (position[0], position[1]
-                                 )
+        positionStr = '%s|%s' % (position[0], position[1])
         # return self.map[positionStr]
         if positionStr in self.map.keys():
             return self.map[positionStr]
@@ -287,8 +328,7 @@ class Map():
             else:
                 newSurface.fill((255, 255, 255))
             pygame.draw.rect(newSurface, (0, 0, 0), (0, 0, 50, 50), 1)
-            font = pygame.font.Font(None, 20)
-            text = font.render('(%s,%s)' %
+            text = self.defaultFont.render('(%s,%s)' %
                                (position[0], position[1]), 1, (10, 10, 10))
             pygame.Surface.blit(newSurface, text, (0, 0))
             self.setMapBlock(position, newSurface)
@@ -299,10 +339,12 @@ class Map():
         """
         返回一个已渲染的地图Surface
         """
+        # BUG(miswanting):优化
         renderSurfaceW = int(self.config[
                              'windowWidth'] / self.config['squareSize'] + 1) * self.config['squareSize']  # 需要渲染的总大小
         renderSurfaceH = int(self.config[
                              'windowHeight'] / self.config['squareSize'] + 1) * self.config['squareSize']
+        logging.info('地图渲染区域大小：{}x{}'.format(renderSurfaceW, renderSurfaceH))
         renderSurface = pygame.Surface(
             (renderSurfaceW, renderSurfaceH))  # 未裁剪的渲染图
         blockList = self.getMapBlockPositionInSight(
@@ -312,7 +354,6 @@ class Map():
             'squareSize'] / 2) / self.config['squareSize']) * self.config['squareSize']
         renderSurfaceTY = math.floor((camera.SWCamera['TPosition'][1] - self.config['windowHeight'] / 2 + self.config[
             'squareSize'] / 2) / self.config['squareSize']) * self.config['squareSize']
-        # print('renderSurfaceTX', renderSurfaceTX)
         for each in blockList:
             tPositionX = each[0] * self.config['squareSize']  # 每个Block的绝对TX
             # print('tPositionX', renderSurfaceTX)
@@ -362,6 +403,9 @@ class Map():
             for y in range(positionYTop, positionYBottom + 1):
                 newList.append((x, y))
         # print(len(newList))
+        logging.info('地图渲染方块区域：{}x{}'.format(positionXRight -
+                                             positionXLeft + 1, positionYBottom - positionYTop + 1))
+        logging.info('地图渲染方块数目：{}'.format(len(newList)))
         return newList
 
     def mapGenerate(self, size):
@@ -435,24 +479,49 @@ class UI(object):
     def __init__(self, config):
         pygame.init()
         self.config = config
+        self.building = Building(config)
+        self.isBuildPanelVisible = False
+        self.defaultFont = pygame.font.Font(getResource('msyh.ttc'), 20)
         self.surface = pygame.Surface(
             (self.config['windowWidth'], self.config['windowHeight']), SRCALPHA)
         self.surface.fill((0, 0, 0, 0))
-        self.upPanel = pygame.Surface(
-            (self.config['windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize']))
+        # TODO(miswanting):使用subsurface
+        self.upPanel = self.surface.subsurface(self.config['squareSize'], 0, self.config[
+                                               'windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize'])
+        self.buildPanel = self.surface.subsurface(self.config['windowWidth'] - 2 * self.config['squareSize'], self.config[
+                                                  'squareSize'], 2 * self.config['squareSize'], self.config['windowHeight'] - 2 * self.config['squareSize'])
+        # self.upPanel = pygame.Surface(
+        #     (self.config['windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize']))
         # self.buildPanelRect =
+        self.BuildingUnitList = []
+
+    def showBuildPanel(self):
+        self.buildPanel.fill((255, 255, 255))
+        pygame.draw.rect(self.buildPanel, (0, 0, 0), (0, 0, 2 * self.config[
+                         'squareSize'], self.config['windowHeight'] - 2 * self.config['squareSize']), 1)
+        self.isBuildPanelVisible = True
+        newBuildingUnit = self.buildPanel.subsurface(
+            0, 0, self.config['squareSize'], self.config['squareSize'])
+        self.BuildingUnitList.append(newBuildingUnit)
+        pygame.Surface.blit(newBuildingUnit, self.building.getNewBuilding(
+            '青楼')['surface'], (0, 0, 0, 0))
 
     def update(self):
+        #
         self.upPanel.fill((255, 255, 255))
         pygame.draw.rect(self.upPanel, (0, 0, 0), (0, 0, self.config[
                          'windowWidth'] - 2 * self.config['squareSize'], self.config['squareSize']), 1)
-        font = pygame.font.Font('msyh.ttc', 20)
-        text = font.render('金币：%s' %
+        text = self.defaultFont.render('金币：%s' %
                            100, 1, (0, 0, 0))
         pygame.Surface.blit(self.upPanel, text, (self.config[
                             'squareSize'] / 2 - text.get_height() / 2, self.config['squareSize'] / 2 - text.get_height() / 2))
-        pygame.Surface.blit(self.surface, self.upPanel,
-                            (self.config['squareSize'], 0))
+        #
+        if self.isBuildPanelVisible:
+            pass
+        else:
+            self.buildPanel.fill((0, 0, 0, 0))
+        # pygame.Surface.blit(self.surface, self.upPanel,
+        #                     (self.config['squareSize'], 0))
 
 
 class Building(object):
@@ -468,7 +537,7 @@ class Building(object):
             (self.config['squareSize'], self.config['squareSize']))
         newBuilding['surface'].fill((255, 255, 255))
         pygame.draw.rect(newBuilding['surface'], (0, 0, 0), (0, 0, self.config[
-                         'squareSize'], self.config['squareSize'], 1))
+                         'squareSize'], self.config['squareSize']), 1)
         font = pygame.font.Font('msyh.ttc', 20)
         text = font.render('%s' % name, 1, (0, 0, 0))
         pygame.Surface.blit(newBuilding['surface'], text, (self.config[

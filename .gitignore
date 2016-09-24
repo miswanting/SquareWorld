@@ -46,6 +46,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 python-3.5.2-docs-html/
-dist/__pycache__/
-dist/build/
-dist/dist/
+dist/__pycache__/**
+dist/build/**
+dist/dist/**
